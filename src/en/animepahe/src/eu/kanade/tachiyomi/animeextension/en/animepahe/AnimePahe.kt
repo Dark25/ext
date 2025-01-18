@@ -73,10 +73,10 @@ class AnimePahe : ConfigurableAnimeSource, AnimeHttpSource() {
         // webview or share it.
         val session = runBlocking {
             withContext(Dispatchers.IO) {
-                fetchSession(anime.title, animeId)
+                fetchSession(animeId)
             }
         }
-        return GET("$baseUrl/anime/$session?anime_id=$animeId")
+        return GET("$baseUrl/anime/$session")
     }
 
     override fun animeDetailsParse(response: Response): SAnime {
@@ -146,7 +146,7 @@ class AnimePahe : ConfigurableAnimeSource, AnimeHttpSource() {
      * @see animeDetailsRequest
      */
     override fun episodeListRequest(anime: SAnime): Request {
-        val session = fetchSession(anime.title, anime.getId())
+        val session = fetchSession(anime.getId())
         return GET("$baseUrl/api?m=release&id=$session&sort=episode_desc&page=1")
     }
 
@@ -310,13 +310,10 @@ class AnimePahe : ConfigurableAnimeSource, AnimeHttpSource() {
     }
 
     // ============================= Utilities ==============================
-    private fun fetchSession(title: String, animeId: String): String {
-        return client.newCall(GET("$baseUrl/api?m=search&q=$title"))
-            .execute()
-            .body.string()
-            .substringAfter("\"id\":$animeId")
-            .substringAfter("\"session\":\"")
-            .substringBefore("\"")
+    private fun fetchSession(animeId: String): String {
+        val resolveAnimeRequest = client.newCall(GET("$baseUrl/a/$animeId")).execute()
+        val sessionId = resolveAnimeRequest.request.url.pathSegments.last()
+        return sessionId
     }
 
     private fun parseStatus(statusString: String): Int {
